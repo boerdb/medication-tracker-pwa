@@ -1,0 +1,35 @@
+<ion-app>
+  <ion-router-outlet></ion-router-outlet>
+
+  <div class="pwa-toasts" aria-live="polite">
+    <div *ngIf="showUpdateUi" class="pwa-banner pwa-banner--update" role="alertdialog" aria-labelledby="pwa-update-title">
+      <div class="pwa-banner__body">
+        <p id="pwa-update-title" class="pwa-banner__title">Update beschikbaar</p>
+        <p class="pwa-banner__text">
+          {{ showManualUpdateHint
+            ? 'iOS kan vertraagd updaten. Sluit de app volledig in de app-switcher en open opnieuw.'
+            : 'Er is een nieuwe versie beschikbaar. Vernieuw om de laatste verbeteringen te krijgen.' }}
+        </p>
+      </div>
+      <div class="pwa-banner__actions">
+        <ion-button size="small" fill="clear" (click)="dismissUpdateBanner()">Later</ion-button>
+        <ion-button size="small" (click)="applyUpdate()" [disabled]="isApplyingUpdate">
+          {{ isApplyingUpdate ? 'Bezig...' : isIosManualUpdateFlow ? 'Nu vernieuwen' : 'Nu vernieuwen' }}
+        </ion-button>
+      </div>
+    </div>
+
+    <div *ngIf="showInstallUi" class="pwa-banner pwa-banner--install" role="dialog" aria-labelledby="pwa-install-title">
+      <div class="pwa-banner__body">
+        <p id="pwa-install-title" class="pwa-banner__title">App installeren</p>
+        <p class="pwa-banner__text">
+          Voeg Medication Tracker toe aan je startscherm voor snellere toegang.
+        </p>
+      </div>
+      <div class="pwa-banner__actions">
+        <ion-button size="small" fill="clear" (click)="dismissInstallBanner()">Later</ion-button>
+        <ion-button size="small" (click)="installApp()">Installeren</ion-button>
+      </div>
+    </div>
+  </div>
+</ion-app>

@@ -1,0 +1,312 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title class="ion-text-center">Medication Tracker</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <ion-card *ngIf="instant.useCloud && instantLoading" color="light">
+    <ion-card-content class="ion-text-center">
+      <ion-spinner name="crescent"></ion-spinner>
+      <p>Medicatie synchroniseren met de cloud…</p>
+    </ion-card-content>
+  </ion-card>
+
+  <ion-card *ngIf="instant.useCloud && instantError" color="danger">
+    <ion-card-header>
+      <ion-card-title>InstantDB</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <p>{{ instantError }}</p>
+      <p class="hint">Controleer je App ID in environment en de permissies in het Instant-dashboard.</p>
+    </ion-card-content>
+  </ion-card>
+
+  <section class="hero">
+    <p class="eyebrow">Daily Medication Companion</p>
+    <h1>{{ todayLabel }}</h1>
+  </section>
+
+  <ion-segment [(ngModel)]="tab" class="tabs" color="tertiary">
+    <ion-segment-button value="today">Today</ion-segment-button>
+    <ion-segment-button value="manage">Manage</ion-segment-button>
+    <ion-segment-button value="history">History</ion-segment-button>
+  </ion-segment>
+
+  <section *ngIf="tab === 'today'" class="panel">
+    <ion-card *ngIf="lowStockRows.length > 0" color="warning">
+      <ion-card-header>
+        <ion-card-title>Voorraad seintje</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <p>Je hebt voor deze medicatie nog 7 dagen of minder voorraad:</p>
+        <ion-list>
+          <ion-item *ngFor="let item of lowStockRows">
+            <ion-label>
+              <h3>{{ item.medicationName }}</h3>
+              <p>Nog {{ item.daysLeft }} dagen ({{ item.stockCount }} pillen)</p>
+            </ion-label>
+          </ion-item>
+        </ion-list>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Notifications</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="notify-row">
+          <ion-label>Missed-dose reminders</ion-label>
+          <ion-toggle
+            [checked]="notificationsEnabled"
+            [disabled]="notificationPermission === 'unsupported'"
+            (ionChange)="handleNotificationsToggle($event.detail.checked)"
+          ></ion-toggle>
+        </div>
+        <p class="hint" *ngIf="notificationPermission === 'denied'">
+          Notifications zijn geblokkeerd. Zet ze aan in je browser-instellingen.
+        </p>
+        <p class="hint" *ngIf="notificationPermission === 'unsupported'">
+          Deze browser ondersteunt geen notifications.
+        </p>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card *ngFor="let item of todaySchedules">
+      <ion-card-header>
+        <ion-card-title>{{ item.medicationName }}</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <p class="time">{{ item.time }}</p>
+        <div class="actions">
+          <ion-button
+            size="small"
+            [color]="item.status === 'taken' ? 'success' : 'medium'"
+            (click)="setScheduleStatus(item.medicationId, item.medicationName, todayKey(), item.time, 'taken')"
+          >
+            Take
+          </ion-button>
+          <ion-button
+            size="small"
+            [color]="item.status === 'skipped' ? 'warning' : 'medium'"
+            (click)="setScheduleStatus(item.medicationId, item.medicationName, todayKey(), item.time, 'skipped')"
+          >
+            Skip
+          </ion-button>
+          <ion-badge [color]="item.status === 'taken' ? 'success' : item.status === 'skipped' ? 'warning' : 'medium'">
+            {{ item.status ? (item.status | uppercase) : 'PENDING' }}
+          </ion-badge>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <p class="empty" *ngIf="todaySchedules.length === 0">No medication scheduled yet.</p>
+  </section>
+
+  <section *ngIf="tab === 'manage'" class="panel">
+    <input
+      #importInput
+      hidden
+      type="file"
+      accept="application/json,.json"
+      (change)="handleImportBackupFile($event)"
+    />
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Add Medication</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="form-grid">
+          <ion-input label="Medication" labelPlacement="stacked" [(ngModel)]="newMedicationName"></ion-input>
+          <ion-input
+            label="Voorraad (pillen)"
+            labelPlacement="stacked"
+            type="number"
+            min="0"
+            [(ngModel)]="newMedicationStock"
+          ></ion-input>
+          <div class="quick-stock-actions">
+            <ion-button size="small" fill="outline" color="secondary" (click)="addStockToNew(10)">+10</ion-button>
+            <ion-button size="small" fill="outline" color="secondary" (click)="addStockToNew(30)">+30</ion-button>
+            <ion-button size="small" fill="outline" color="secondary" (click)="addStockToNew(90)">+90</ion-button>
+          </div>
+          <div class="time-picker-wrap">
+            <span class="time-picker-label">Time</span>
+            <ion-datetime-button datetime="newMedicationTimePicker"></ion-datetime-button>
+            <ion-modal #newTimeModal [keepContentsMounted]="true">
+              <ng-template>
+                <ion-datetime
+                  id="newMedicationTimePicker"
+                  presentation="time"
+                  [preferWheel]="true"
+                  hour-cycle="h23"
+                  [value]="toPickerValue(newTime)"
+                  (ionChange)="onNewTimePicked($event, newTimeModal)"
+                ></ion-datetime>
+              </ng-template>
+            </ion-modal>
+            <span class="time-preview">{{ newTime || '--:--' }}</span>
+          </div>
+          <ion-button size="small" fill="outline" (click)="addTimeToNewMedication()">Add Time</ion-button>
+          <ion-button size="small" (click)="createMedication()">Save</ion-button>
+        </div>
+        <div class="chips">
+          <ion-chip *ngFor="let time of newMedicationTimes" (click)="removeNewMedicationTime(time)">{{ time }} x</ion-chip>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card *ngFor="let medication of medications" [class.low-stock-card]="inventoryForMedication(medication.id)?.isLowStock">
+      <ion-card-header>
+        <ion-card-title *ngIf="renamingMedicationId !== medication.id">{{ medication.name }}</ion-card-title>
+        <ion-input *ngIf="renamingMedicationId === medication.id" [(ngModel)]="renameDraft"></ion-input>
+      </ion-card-header>
+      <ion-card-content>
+        <div
+          class="stock-badge-row"
+          *ngIf="inventoryForMedication(medication.id)?.daysLeft !== null"
+        >
+          <ion-badge
+            [color]="inventoryForMedication(medication.id)?.isLowStock ? 'warning' : 'success'"
+          >
+            {{ inventoryForMedication(medication.id)?.daysLeft }} dagen over
+          </ion-badge>
+        </div>
+        <div class="quick-stock-actions" style="margin-bottom: 12px;">
+          <ion-button size="small" fill="outline" color="secondary" (click)="addStockToExisting(medication, 10)">+10</ion-button>
+          <ion-button size="small" fill="outline" color="secondary" (click)="addStockToExisting(medication, 30)">+30</ion-button>
+          <ion-button size="small" fill="outline" color="secondary" (click)="addStockToExisting(medication, 90)">+90</ion-button>
+        </div>
+
+        <div class="actions" *ngIf="renamingMedicationId !== medication.id">
+          <ion-button size="small" fill="outline" (click)="startRenameMedication(medication)">Rename</ion-button>
+          <ion-button size="small" color="danger" fill="outline" (click)="deleteMedication(medication.id)">Delete</ion-button>
+        </div>
+        <div class="actions" *ngIf="renamingMedicationId === medication.id">
+          <ion-button size="small" (click)="saveRenameMedication(medication.id)">Save</ion-button>
+          <ion-button size="small" fill="outline" (click)="cancelRenameMedication()">Cancel</ion-button>
+        </div>
+
+        <div class="time-list">
+          <div class="time-edit" *ngFor="let time of medication.times">
+            <ion-datetime-button [datetime]="editTimePickerId(medication.id, time)"></ion-datetime-button>
+            <ion-modal #editTimeModal [keepContentsMounted]="true">
+              <ng-template>
+                <ion-datetime
+                  [id]="editTimePickerId(medication.id, time)"
+                  presentation="time"
+                  [preferWheel]="true"
+                  hour-cycle="h23"
+                  [value]="toPickerValue(time)"
+                  (ionChange)="onMedicationTimePicked(medication, time, $event, editTimeModal)"
+                ></ion-datetime>
+              </ng-template>
+            </ion-modal>
+            <span class="time-preview">{{ time }}</span>
+            <ion-button size="small" fill="clear" color="danger" (click)="removeMedicationTime(medication, time)">
+              Remove
+            </ion-button>
+          </div>
+        </div>
+
+        <div class="actions">
+          <ion-datetime-button [datetime]="addTimePickerId(medication.id)"></ion-datetime-button>
+          <ion-modal #addTimeModal [keepContentsMounted]="true">
+            <ng-template>
+              <ion-datetime
+                [id]="addTimePickerId(medication.id)"
+                presentation="time"
+                [preferWheel]="true"
+                hour-cycle="h23"
+                [value]="toPickerValue(newTimeByMedication[medication.id])"
+                (ionChange)="onAdditionalTimePicked(medication.id, $event, addTimeModal)"
+              ></ion-datetime>
+            </ng-template>
+          </ion-modal>
+          <span class="time-preview">{{ newTimeByMedication[medication.id] || '--:--' }}</span>
+          <ion-button size="small" fill="outline" (click)="addTimeToMedication(medication.id)">Add Intake Time</ion-button>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card *ngIf="!instant.useCloud">
+      <ion-card-header>
+        <ion-card-title>Backup en herstel</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="actions">
+          <ion-button size="small" (click)="handleExportBackup()">Exporteren (JSON)</ion-button>
+          <ion-button size="small" fill="outline" (click)="triggerImportBackup()">Importeren...</ion-button>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card *ngIf="instant.useCloud">
+      <ion-card-header>
+        <ion-card-title>Import van JSON</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <p class="hint">Een oude back-up of export uit een ander apparaat uploaden naar de cloud.</p>
+        <div class="actions">
+          <ion-button size="small" fill="outline" (click)="triggerImportBackup()">JSON kiezen…</ion-button>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </section>
+
+  <section *ngIf="tab === 'history'" class="panel">
+    <p>Historie: laatste {{ historyDaysToKeep }} dagen.</p>
+
+    <ion-grid>
+      <ion-row>
+        <ion-col>
+          <ion-card>
+            <ion-card-header><ion-card-title>Taken</ion-card-title></ion-card-header>
+            <ion-card-content>{{ historyTaken }}</ion-card-content>
+          </ion-card>
+        </ion-col>
+        <ion-col>
+          <ion-card>
+            <ion-card-header><ion-card-title>Skipped</ion-card-title></ion-card-header>
+            <ion-card-content>{{ historySkipped }}</ion-card-content>
+          </ion-card>
+        </ion-col>
+        <ion-col>
+          <ion-card>
+            <ion-card-header><ion-card-title>Total</ion-card-title></ion-card-header>
+            <ion-card-content>{{ historyRows.length }}</ion-card-content>
+          </ion-card>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+
+    <ion-accordion-group *ngIf="historyDays.length > 0" [multiple]="true" value="0">
+      <ion-accordion *ngFor="let day of historyDays; let i = index" [value]="i.toString()">
+        <ion-item slot="header" class="history-day" [class.history-day-incomplete]="!day.allTaken">
+          <ion-label>
+            <h3>{{ day.label }}</h3>
+            <p>{{ day.takenCount }} / {{ day.expectedCount }} genomen</p>
+          </ion-label>
+          <ion-badge [color]="day.allTaken ? 'success' : 'warning'">
+            {{ day.allTaken ? 'VOLLEDIG' : 'ONVOLLEDIG' }}
+          </ion-badge>
+        </ion-item>
+
+        <div slot="content" class="history-day-content">
+          <ion-list *ngIf="day.entries.length > 0">
+            <ion-item *ngFor="let entry of day.entries">
+              <ion-label>
+                <h3>{{ entry.medicationName }}</h3>
+                <p>{{ entry.time }}</p>
+              </ion-label>
+              <ion-badge [color]="entry.status === 'taken' ? 'success' : 'warning'">{{ entry.status | uppercase }}</ion-badge>
+            </ion-item>
+          </ion-list>
+
+          <p class="empty" *ngIf="day.entries.length === 0">Geen registraties op deze dag.</p>
+        </div>
+      </ion-accordion>
+    </ion-accordion-group>
+  </section>
+</ion-content>

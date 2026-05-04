@@ -1,0 +1,170 @@
+.hero {
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-tertiary));
+  padding: 24px;
+  border-radius: 16px;
+  color: white;
+  box-shadow: 0 8px 24px rgba(var(--ion-color-primary-rgb), 0.3);
+}
+
+.hero .eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.hero h1 {
+  margin: 8px 0 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.tabs {
+  margin-bottom: 12px;
+}
+
+.panel {
+  display: grid;
+  gap: 10px;
+}
+
+.notify-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hint {
+  margin: 8px 0 0;
+  color: var(--ion-color-medium);
+  font-size: 0.9rem;
+}
+
+.time {
+  margin: 0 0 8px;
+  color: var(--ion-color-medium);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.form-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.chips {
+  margin-top: 10px;
+}
+
+.time-list {
+  margin: 10px 0;
+  display: grid;
+  gap: 8px;
+}
+
+.time-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.time-input-wrap {
+  display: grid;
+  gap: 4px;
+  font-size: 0.9rem;
+  color: var(--ion-color-medium);
+}
+
+.time-picker-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.time-picker-label {
+  font-size: 0.9rem;
+  color: var(--ion-color-medium);
+}
+
+.time-preview {
+  font-variant-numeric: tabular-nums;
+  color: var(--ion-color-medium);
+}
+
+.stock-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.stock-row ion-badge {
+  white-space: normal;
+  text-align: center;
+}
+
+.stock-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.stock-badge-row ion-badge {
+  white-space: normal;
+  text-align: center;
+  font-size: 0.85rem;
+  padding: 8px 12px;
+}
+
+.quick-stock-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.low-stock-card {
+  border: 1px solid rgba(var(--ion-color-warning-rgb), 0.45);
+}
+
+input[type='time'] {
+  border: 1px solid var(--ion-color-light-shade);
+  border-radius: 8px;
+  padding: 8px;
+  background: var(--ion-background-color);
+  color: var(--ion-text-color);
+}
+
+.empty {
+  text-align: center;
+  color: var(--ion-color-medium);
+  margin: 14px 0;
+}
+
+.history-day {
+  --padding-start: 12px;
+  --inner-padding-end: 12px;
+}
+
+.history-day-incomplete {
+  --background: color-mix(in srgb, var(--ion-color-warning) 16%, var(--ion-card-background));
+}
+
+.history-day-content {
+  padding: 0 0 8px;
+}
