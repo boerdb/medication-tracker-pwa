@@ -6,6 +6,11 @@ export const environment = {
   production: false,
   /** InstantDB App ID (dashboard.instantdb.com). Leeg = alleen lokale opslag. */
   instantAppId: 'c470e575-d873-4a58-830b-8830949f9597',
+  /**
+   * Zwevend InstantDB-devtools-icoon (data explorer). Zet tijdelijk op true tijdens debug.
+   * @see https://www.instantdb.com/docs/devtool
+   */
+  instantDevtools: false,
 };
 
 /*

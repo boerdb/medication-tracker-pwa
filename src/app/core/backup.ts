@@ -24,7 +24,7 @@ export type MedtrackerBackupV1 = {
   notificationsEnabled?: boolean;
 };
 
-function validateMedication(x: unknown): x is ExportedMedication {
+function validateMedicationShape(x: unknown): boolean {
   if (!x || typeof x !== 'object') return false;
   const o = x as Record<string, unknown>;
   if (typeof o['id'] !== 'string' || typeof o['name'] !== 'string') return false;
@@ -33,30 +33,92 @@ function validateMedication(x: unknown): x is ExportedMedication {
 
   const stockCount = o['stockCount'];
   if (stockCount === undefined || stockCount === null) return true;
-  return typeof stockCount === 'number' && Number.isFinite(stockCount) && stockCount >= 0;
+  if (typeof stockCount === 'number') {
+    return Number.isFinite(stockCount) && stockCount >= 0;
+  }
+  if (typeof stockCount === 'string') {
+    const n = Number(stockCount.trim());
+    return Number.isFinite(n) && n >= 0;
+  }
+  return false;
 }
 
-function validateLogEntry(x: unknown): x is ExportedLogEntry {
+function validateLogEntryShape(x: unknown): boolean {
   if (!x || typeof x !== 'object') return false;
   const o = x as Record<string, unknown>;
   const statusOk = o['status'] === 'taken' || o['status'] === 'skipped';
+  const updatedOk =
+    typeof o['updatedAt'] === 'string' ||
+    (typeof o['updatedAt'] === 'number' && Number.isFinite(o['updatedAt']));
   return (
     statusOk &&
+    updatedOk &&
     typeof o['id'] === 'string' &&
     typeof o['medicationId'] === 'string' &&
     typeof o['medicationName'] === 'string' &&
     typeof o['dateKey'] === 'string' &&
-    typeof o['time'] === 'string' &&
-    typeof o['updatedAt'] === 'string'
+    typeof o['time'] === 'string'
   );
+}
+
+function normalizeExportedMedication(raw: unknown): ExportedMedication {
+  const o = raw as Record<string, unknown>;
+  const sc = o['stockCount'];
+  let stockCount: number | null | undefined;
+  if (sc === undefined) {
+    stockCount = undefined;
+  } else if (sc === null) {
+    stockCount = null;
+  } else if (typeof sc === 'number' && Number.isFinite(sc) && sc >= 0) {
+    stockCount = Math.floor(sc);
+  } else if (typeof sc === 'string') {
+    const n = Number(sc.trim());
+    stockCount = Number.isFinite(n) && n >= 0 ? Math.floor(n) : null;
+  } else {
+    stockCount = null;
+  }
+  const base: ExportedMedication = {
+    id: o['id'] as string,
+    name: o['name'] as string,
+    times: o['times'] as string[],
+  };
+  if (stockCount !== undefined) {
+    return { ...base, stockCount };
+  }
+  return base;
+}
+
+function normalizeExportedLogEntry(raw: unknown): ExportedLogEntry {
+  const o = raw as Record<string, unknown>;
+  const u = o['updatedAt'];
+  const updatedAt =
+    typeof u === 'string'
+      ? u
+      : typeof u === 'number' && Number.isFinite(u)
+        ? new Date(u).toISOString()
+        : new Date().toISOString();
+  return {
+    id: o['id'] as string,
+    medicationId: o['medicationId'] as string,
+    medicationName: o['medicationName'] as string,
+    dateKey: o['dateKey'] as string,
+    time: o['time'] as string,
+    status: o['status'] as 'taken' | 'skipped',
+    updatedAt,
+  };
+}
+
+function stripBom(s: string): string {
+  return s.replace(/^\uFEFF/, '');
 }
 
 export function parseMedtrackerBackupJson(
   raw: string,
 ): { ok: true; data: MedtrackerBackupV1 } | { ok: false; error: string } {
+  const text = stripBom(raw);
   let parsed: unknown;
   try {
-    parsed = JSON.parse(raw) as unknown;
+    parsed = JSON.parse(text) as unknown;
   } catch {
     return { ok: false, error: 'Geen geldige JSON.' };
   }
@@ -71,15 +133,21 @@ export function parseMedtrackerBackupJson(
     return { ok: false, error: `Exportversie ${String(sv)} wordt niet ondersteund (alleen versie 1).` };
   }
 
-  if (!Array.isArray(obj['medications']) || !Array.isArray(obj['logs'])) {
-    return { ok: false, error: 'Het bestand mist medications of logs.' };
+  if (!Array.isArray(obj['medications'])) {
+    return { ok: false, error: 'Het bestand mist het veld medications (array).' };
   }
 
-  if (!obj['medications'].every(validateMedication)) {
+  const rawLogs = obj['logs'];
+  const logsArray = Array.isArray(rawLogs) ? rawLogs : rawLogs === undefined ? [] : null;
+  if (logsArray === null) {
+    return { ok: false, error: 'Het veld logs is ongeldig (verwacht een array of weglating).' };
+  }
+
+  if (!obj['medications'].every(validateMedicationShape)) {
     return { ok: false, error: 'Ongeldige medicatiegegevens in het bestand.' };
   }
 
-  if (!obj['logs'].every(validateLogEntry)) {
+  if (!logsArray.every(validateLogEntryShape)) {
     return { ok: false, error: 'Ongeldige logboekgegevens in het bestand.' };
   }
 
@@ -96,8 +164,8 @@ export function parseMedtrackerBackupJson(
   const data: MedtrackerBackupV1 = {
     schemaVersion: 1,
     exportedAt: typeof obj['exportedAt'] === 'string' ? obj['exportedAt'] : new Date().toISOString(),
-    medications: obj['medications'],
-    logs: obj['logs'],
+    medications: (obj['medications'] as unknown[]).map(normalizeExportedMedication),
+    logs: logsArray.map(normalizeExportedLogEntry),
     reminderBeeps:
       reminderBeeps === undefined
         ? undefined

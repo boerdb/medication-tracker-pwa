@@ -36,24 +36,75 @@
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
 /* @import "@ionic/angular/css/palettes/dark.system.css"; */
 
-/* App-wide Colorful Overrides */
+/* App-wide cards / knoppen — neutrale schaduwen */
 ion-card {
   --background: var(--ion-card-background);
-  box-shadow: 0 4px 16px rgba(var(--ion-color-tertiary-rgb), 0.15) !important;
-  border: 1px solid rgba(var(--ion-color-primary-rgb), 0.1) !important;
-  border-radius: 16px !important;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06) !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  border-radius: 12px !important;
 }
 
 ion-button {
-  --box-shadow: 0 4px 12px rgba(var(--ion-color-primary-rgb), 0.3) !important;
+  --box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12) !important;
 }
 
 ion-segment-button {
-  --color-checked: var(--ion-color-tertiary) !important;
-  --indicator-color: var(--ion-color-tertiary) !important;
+  --color-checked: var(--ion-color-primary) !important;
+  --indicator-color: var(--ion-color-primary) !important;
 }
 
 body {
   color: var(--ion-text-color);
+}
+
+/**
+ * Scrollbars: minder donkere “balk” rechts en gelijkkleurige hoek (Windows/WebKit).
+ * Het zwarte vierkantje rechtsonder is vaak ::-webkit-scrollbar-corner i.p.v. de app.
+ */
+* {
+  scrollbar-color: rgba(var(--ion-color-primary-rgb), 0.35) var(--ion-background-color);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--ion-background-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(var(--ion-color-primary-rgb), 0.35);
+  border-radius: 6px;
+  border: 2px solid var(--ion-background-color);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--ion-background-color);
+}
+
+/* Invulvelden: duidelijke omkadering in primary-blauw (Ionic outline) */
+ion-input[fill="outline"] {
+  --background: var(--ion-item-background, #ffffff);
+  --border-radius: 8px;
+  --border-width: 1px;
+  --border-style: solid;
+  --border-color: rgba(var(--ion-color-primary-rgb), 0.38);
+  --highlight-color-focused: var(--ion-color-primary);
+  margin-bottom: 10px;
+}
+
+ion-input[fill="outline"].ion-focused,
+ion-input[fill="outline"]:focus-within {
+  --border-color: var(--ion-color-primary);
+}
+
+/* Tijdkiezers als zelfde “veld”-rand als tekstvelden */
+ion-datetime-button {
+  border-radius: 8px;
+  border: 1px solid rgba(var(--ion-color-primary-rgb), 0.38);
+  overflow: hidden;
+  --background: var(--ion-item-background);
 }
 

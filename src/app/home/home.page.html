@@ -1,10 +1,81 @@
 <ion-header>
   <ion-toolbar color="primary">
     <ion-title class="ion-text-center">Medication Tracker</ion-title>
+    <ion-buttons slot="end" *ngIf="instant.useCloud && instant.cloudSessionUser?.id">
+      <ion-button fill="clear" size="small" (click)="signOutCloud()">Afmelden</ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
 <ion-content class="ion-padding">
+  <ion-card *ngIf="showCloudAuthSpinner" color="light">
+    <ion-card-content class="ion-text-center">
+      <ion-spinner name="crescent"></ion-spinner>
+      <p>Sessie laden…</p>
+    </ion-card-content>
+  </ion-card>
+
+  <ion-card *ngIf="showCloudLogin" color="light">
+    <ion-card-header>
+      <ion-card-title>Inloggen</ion-card-title>
+      <ion-card-subtitle>Je ziet alleen je eigen medicatie. Gebruik per persoon een eigen e-mailadres.</ion-card-subtitle>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-input
+        type="email"
+        fill="outline"
+        label="E-mail"
+        labelPlacement="stacked"
+        autocomplete="email"
+        [(ngModel)]="loginEmail"
+        [disabled]="loginBusy"
+      ></ion-input>
+      <div class="actions login-send-actions">
+        <ion-button
+          size="small"
+          (click)="sendLoginCode()"
+          [disabled]="loginBusy || !loginEmail.trim()"
+        >
+          Code sturen
+        </ion-button>
+      </div>
+      <div *ngIf="codeSent" class="login-code-block">
+        <ion-input
+          fill="outline"
+          label="Code uit e-mail (6 cijfers)"
+          labelPlacement="stacked"
+          inputmode="numeric"
+          [(ngModel)]="loginCode"
+          [disabled]="loginBusy"
+        ></ion-input>
+        <div class="actions">
+          <ion-button
+            size="small"
+            (click)="submitLoginCode()"
+            [disabled]="loginBusy || loginCode.trim().length < 4"
+          >
+            Inloggen
+          </ion-button>
+        </div>
+      </div>
+      <p class="hint" style="margin-top: 16px">
+        Alleen op dit apparaat zonder gedeelde synchronisatie tussen telefoons:
+      </p>
+      <ion-button size="small" fill="outline" (click)="continueAsGuestDevice()" [disabled]="loginBusy">
+        Anoniem op dit apparaat
+      </ion-button>
+      <p class="hint" *ngIf="loginHint" style="margin-top: 8px">{{ loginHint }}</p>
+    </ion-card-content>
+  </ion-card>
+
+  <ng-container *ngIf="showMedicationApp">
+  <input
+    #importInput
+    hidden
+    type="file"
+    accept="application/json,.json"
+    (change)="handleImportBackupFile($event)"
+  />
   <ion-card *ngIf="instant.useCloud && instantLoading" color="light">
     <ion-card-content class="ion-text-center">
       <ion-spinner name="crescent"></ion-spinner>
@@ -27,7 +98,7 @@
     <h1>{{ todayLabel }}</h1>
   </section>
 
-  <ion-segment [(ngModel)]="tab" class="tabs" color="tertiary">
+  <ion-segment [(ngModel)]="tab" class="tabs" color="primary">
     <ion-segment-button value="today">Today</ion-segment-button>
     <ion-segment-button value="manage">Manage</ion-segment-button>
     <ion-segment-button value="history">History</ion-segment-button>
@@ -105,21 +176,20 @@
   </section>
 
   <section *ngIf="tab === 'manage'" class="panel">
-    <input
-      #importInput
-      hidden
-      type="file"
-      accept="application/json,.json"
-      (change)="handleImportBackupFile($event)"
-    />
     <ion-card>
       <ion-card-header>
         <ion-card-title>Add Medication</ion-card-title>
       </ion-card-header>
       <ion-card-content>
         <div class="form-grid">
-          <ion-input label="Medication" labelPlacement="stacked" [(ngModel)]="newMedicationName"></ion-input>
           <ion-input
+            fill="outline"
+            label="Medication"
+            labelPlacement="stacked"
+            [(ngModel)]="newMedicationName"
+          ></ion-input>
+          <ion-input
+            fill="outline"
             label="Voorraad (pillen)"
             labelPlacement="stacked"
             type="number"
@@ -160,7 +230,12 @@
     <ion-card *ngFor="let medication of medications" [class.low-stock-card]="inventoryForMedication(medication.id)?.isLowStock">
       <ion-card-header>
         <ion-card-title *ngIf="renamingMedicationId !== medication.id">{{ medication.name }}</ion-card-title>
-        <ion-input *ngIf="renamingMedicationId === medication.id" [(ngModel)]="renameDraft"></ion-input>
+        <ion-input
+          *ngIf="renamingMedicationId === medication.id"
+          fill="outline"
+          placeholder="Nieuwe naam"
+          [(ngModel)]="renameDraft"
+        ></ion-input>
       </ion-card-header>
       <ion-card-content>
         <div
@@ -309,4 +384,5 @@
       </ion-accordion>
     </ion-accordion-group>
   </section>
+  </ng-container>
 </ion-content>

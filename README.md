@@ -1,44 +1,56 @@
-# Medication Tracker (Ionic + Angular)
+# Medication Tracker
 
-This folder contains the migrated Ionic/Angular version of the original React PWA.
+**Medication Tracker** is een **Progressive Web App (PWA)** waarmee je eenvoudig je medicatie kunt bijhouden: welke medicijnen je gebruikt, op welke tijden, of je een dosis hebt **genomen of overgeslagen**, en je **voorraad**. De app is bedoeld om op telefoon, tablet of desktop in de browser te draaien; je kunt de PWA ook **toevoegen aan je startscherm** voor app-achtig gebruik.
 
-## Why this migration
+Na het openen zie je kort een **landingscherm** (merk / afbeelding), daarna ga je automatisch verder naar het hoofdscherm.
 
-The app now uses Angular Service Worker update events (`SwUpdate`) for a more predictable update banner flow, including iOS fallback guidance when update activation is delayed.
+## Technisch
 
-## Run locally
+- **Ionic** + **Angular** (web)
+- **Service worker** voor offline gebruik en update-meldingen
+- Lokaal opgeslagen data (o.a. via `localStorage`), met export/import van een **JSON-backup**
+
+---
+
+Dit project bevat de gemigreerde Ionic/Angular-versie van de oorspronkelijke React-PWA.
+
+## Waarom deze migratie
+
+De app gebruikt nu Angular Service Worker-update-events (`SwUpdate`) voor voorspelbare update-bannerflow, inclusief iOS-fallback wanneer het activeren van een update vertraagd is.
+
+## Lokaal draaien
 
 ```bash
 npm install
 npm start
 ```
 
-## Production build
+## Productie-build
 
 ```bash
 npm run build
 ```
 
-Build output goes to `www/`.
+Build-output staat in `www/`.
 
-## Key migrated features
+## Belangrijkste functies
 
-- Today / Manage / History tabs
-- Medication schedule CRUD
-- Taken / skipped logging
-- 30-day history summary
-- Reminder beeps + notification reminders
-- JSON backup export/import
-- Install prompt banner (Android/Chrome)
-- Update available banner using Angular `SwUpdate`
+- Tabs: **Vandaag** / **Beheren** / **Geschiedenis**
+- Medicatie en schema’s beheren (CRUD)
+- Loggen: genomen / overgeslagen
+- Geschiedenis (o.a. samenvatting over meerdere dagen)
+- Herinneringen (geluid + optioneel notificaties)
+- JSON-backup exporteren en importeren
+- Installatie-banner (Android/Chrome)
+- Banner “update beschikbaar” via Angular `SwUpdate`
 
-## Data compatibility
+## Datacompatibiliteit
 
-The Ionic/Angular app uses the same localStorage keys as the React app:
+De Ionic/Angular-app gebruikt dezelfde `localStorage`-sleutels als de React-app:
 
 - `medtracker:medications`
 - `medtracker:logs`
 - `medtracker:reminderBeeps`
 - `medtracker:notificationsEnabled`
 
-This means existing browser data and backup JSON files remain compatible.
+Bestaande browserdata en backup-JSON blijven daarmee compatibel.

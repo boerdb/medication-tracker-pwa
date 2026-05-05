@@ -12,11 +12,11 @@
 
 .pwa-banner {
 	pointer-events: auto;
-	border-radius: 14px;
+	border-radius: 12px;
 	padding: 12px;
 	background: var(--ion-card-background);
-	border: 2px solid var(--ion-color-secondary);
-	box-shadow: 0 12px 24px rgba(var(--ion-color-secondary-rgb), 0.25);
+	border: 1px solid rgba(15, 23, 42, 0.12);
+	box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
 }
 
 .pwa-banner__title {

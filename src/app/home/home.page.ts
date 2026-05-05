@@ -179,6 +179,12 @@ export class HomePage implements OnInit, OnDestroy {
   medications: Medication[] = [];
   logs: LogEntry[] = [];
 
+  loginEmail = '';
+  loginCode = '';
+  loginBusy = false;
+  loginHint: string | null = null;
+  codeSent = false;
+
   newMedicationName = '';
   newTime = '';
   newMedicationStock = '';
@@ -218,6 +224,12 @@ export class HomePage implements OnInit, OnDestroy {
           this.instantLoading = false;
           this.cdr.markForCheck();
         },
+        () => {
+          if (this.instant.cloudNeedsLogin) {
+            this.instantLoading = false;
+          }
+          this.cdr.markForCheck();
+        },
       );
     } else {
       this.saveLogs(this.logs);
@@ -240,6 +252,19 @@ export class HomePage implements OnInit, OnDestroy {
     if (this.reminderIntervalId !== null) {
       window.clearInterval(this.reminderIntervalId);
     }
+  }
+
+  get showCloudAuthSpinner(): boolean {
+    return this.instant.useCloud && !this.instant.cloudAuthChecked;
+  }
+
+  get showCloudLogin(): boolean {
+    return this.instant.cloudNeedsLogin;
+  }
+
+  /** Hoofdscherm (tabs + medicatie): na auth-check en bij ingelogde sessie, of zonder cloud. */
+  get showMedicationApp(): boolean {
+    return !this.instant.useCloud || (this.instant.cloudAuthChecked && !this.instant.cloudNeedsLogin);
   }
 
   get todayLabel(): string {
@@ -829,12 +854,18 @@ export class HomePage implements OnInit, OnDestroy {
     const importedLogs = pruneHistoryLogs(data.logs);
     const nextMedications = data.medications.map(normalizeMedication);
 
-    if (this.instant.useCloud) {
-      await this.instant.replaceAllFromBackup(nextMedications, importedLogs);
-    } else {
-      localStorage.setItem(MEDICATIONS_KEY, JSON.stringify(data.medications));
-      localStorage.setItem(LOGS_KEY, JSON.stringify(importedLogs));
+    try {
+      if (this.instant.useCloud) {
+        await this.instant.replaceAllFromBackup(nextMedications, importedLogs);
+      } else {
+        localStorage.setItem(MEDICATIONS_KEY, JSON.stringify(nextMedications));
+        localStorage.setItem(LOGS_KEY, JSON.stringify(importedLogs));
+      }
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : 'Importeren naar opslag is mislukt.');
+      return;
     }
+
     localStorage.setItem(REMINDER_FLAGS_KEY, JSON.stringify(data.reminderBeeps ?? {}));
     persistNotificationsEnabled(data.notificationsEnabled ?? false);
 
@@ -853,8 +884,75 @@ export class HomePage implements OnInit, OnDestroy {
     this.reconcilePeriodicSync();
     await this.syncReminders();
     await this.notifyLowStockIfNeeded();
+    this.cdr.markForCheck();
   }
 
   readonly todayKey = todayKey;
+
+  async sendLoginCode(): Promise<void> {
+    this.loginHint = null;
+    this.instantError = null;
+    this.loginBusy = true;
+    try {
+      await this.instant.sendLoginCode(this.loginEmail);
+      this.codeSent = true;
+      this.loginHint = 'Code verstuurd. Controleer je inbox (ook spam).';
+    } catch (e) {
+      this.loginHint = e instanceof Error ? e.message : 'Code versturen mislukt.';
+    } finally {
+      this.loginBusy = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  async submitLoginCode(): Promise<void> {
+    this.loginHint = null;
+    this.instantError = null;
+    this.loginBusy = true;
+    this.instantLoading = true;
+    try {
+      await this.instant.signInWithEmailCode(this.loginEmail, this.loginCode);
+      this.loginCode = '';
+      this.codeSent = false;
+      this.loginHint = null;
+    } catch (e) {
+      this.loginHint = e instanceof Error ? e.message : 'Inloggen mislukt.';
+      this.instantLoading = false;
+    } finally {
+      this.loginBusy = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  async continueAsGuestDevice(): Promise<void> {
+    this.loginHint = null;
+    this.instantError = null;
+    this.loginBusy = true;
+    this.instantLoading = true;
+    try {
+      await this.instant.signInAsGuestDevice();
+    } catch (e) {
+      this.loginHint = e instanceof Error ? e.message : 'Anoniem inloggen mislukt.';
+      this.instantLoading = false;
+    } finally {
+      this.loginBusy = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  async signOutCloud(): Promise<void> {
+    this.loginEmail = '';
+    this.loginCode = '';
+    this.codeSent = false;
+    this.loginHint = null;
+    this.instantError = null;
+    await this.instant.signOutCloud();
+    this.medications = [];
+    this.logs = [];
+    this.flags = {};
+    this.instantLoading = false;
+    this.cancelRenameMedication();
+    this.cdr.markForCheck();
+  }
 
 }
