@@ -184,10 +184,35 @@
         <div class="form-grid">
           <ion-input
             fill="outline"
-            label="Medication"
+            label="Naam"
             labelPlacement="stacked"
             [(ngModel)]="newMedicationName"
           ></ion-input>
+          <div class="dose-row">
+            <ion-input
+              class="dose-amount"
+              fill="outline"
+              label="Hoeveelheid"
+              labelPlacement="stacked"
+              type="number"
+              min="0"
+              step="any"
+              inputmode="decimal"
+              [(ngModel)]="newMedicationDose"
+            ></ion-input>
+            <ion-select
+              class="dose-unit"
+              fill="outline"
+              label="Eenheid"
+              labelPlacement="stacked"
+              interface="popover"
+              [(ngModel)]="newMedicationDoseUnit"
+            >
+              <ion-select-option *ngFor="let option of doseUnitOptions" [value]="option.value">
+                {{ option.label }}
+              </ion-select-option>
+            </ion-select>
+          </div>
           <ion-input
             fill="outline"
             label="Voorraad (pillen)"

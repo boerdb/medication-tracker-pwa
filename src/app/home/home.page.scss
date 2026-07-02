@@ -83,6 +83,18 @@
   gap: 10px;
 }
 
+.dose-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(96px, 120px);
+  gap: 10px;
+  align-items: end;
+}
+
+.dose-amount,
+.dose-unit {
+  width: 100%;
+}
+
 .chips {
   margin-top: 10px;
 }

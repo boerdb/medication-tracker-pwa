@@ -23,6 +23,7 @@ import { runReminderTick, slotKey, type ReminderFlags } from '../core/reminder-l
 
 type Tab = 'today' | 'manage' | 'history';
 type Status = 'taken' | 'skipped';
+type DoseUnit = 'mg' | 'g' | 'µg';
 
 type MedicationLike = {
   id: string;
@@ -186,6 +187,13 @@ export class HomePage implements OnInit, OnDestroy {
   codeSent = false;
 
   newMedicationName = '';
+  newMedicationDose = '';
+  newMedicationDoseUnit: DoseUnit = 'mg';
+  readonly doseUnitOptions: Array<{ value: DoseUnit; label: string }> = [
+    { value: 'mg', label: 'mg' },
+    { value: 'g', label: 'g' },
+    { value: 'µg', label: 'µg' },
+  ];
   newTime = '';
   newMedicationStock = '';
   newMedicationTimes: string[] = [];
@@ -580,8 +588,12 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   createMedication(): void {
-    const trimmedName = this.newMedicationName.trim();
-    if (!trimmedName || this.newMedicationTimes.length === 0) return;
+    const displayName = this.formatMedicationDisplayName(
+      this.newMedicationName,
+      this.newMedicationDose,
+      this.newMedicationDoseUnit,
+    );
+    if (!displayName || this.newMedicationTimes.length === 0) return;
 
     const stockCount = this.parseStockInput(this.newMedicationStock);
 
@@ -589,7 +601,7 @@ export class HomePage implements OnInit, OnDestroy {
       ...this.medications,
       {
         id: uid(),
-        name: trimmedName,
+        name: displayName,
         times: [...this.newMedicationTimes].sort(),
         stockCount,
       },
@@ -597,8 +609,21 @@ export class HomePage implements OnInit, OnDestroy {
 
     this.saveMedications(next);
     this.newMedicationName = '';
+    this.newMedicationDose = '';
+    this.newMedicationDoseUnit = 'mg';
     this.newMedicationStock = '';
     this.newMedicationTimes = [];
+  }
+
+  private formatMedicationDisplayName(name: string, dose: string, unit: DoseUnit): string {
+    const trimmedName = name.trim();
+    const trimmedDose = dose.trim();
+    if (!trimmedName) return '';
+    if (!trimmedDose) return trimmedName;
+
+    const parsedDose = Number(trimmedDose);
+    const doseLabel = Number.isFinite(parsedDose) ? String(parsedDose) : trimmedDose;
+    return `${trimmedName} ${doseLabel} ${unit}`;
   }
 
   deleteMedication(medicationId: string): void {
@@ -876,6 +901,8 @@ export class HomePage implements OnInit, OnDestroy {
 
     this.cancelRenameMedication();
     this.newMedicationName = '';
+    this.newMedicationDose = '';
+    this.newMedicationDoseUnit = 'mg';
     this.newTime = '';
     this.newMedicationStock = '';
     this.newMedicationTimes = [];
